@@ -5,7 +5,8 @@
   "require": {
     "xeroapi/xero-php-oauth2": "2.5.4",
     "monolog/monolog": "1.0",
-    "vlucas/phpdotenv": "^4.1"
+    "vlucas/phpdotenv": "^4.1",
+    "guzzlehttp/psr7": "^1.8.2"
   },
   "license": "MIT",
   "authors": [
