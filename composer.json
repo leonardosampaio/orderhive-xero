@@ -2,6 +2,11 @@
   "name": "xeroapi/xero-php-oauth2-app",
   "description": "Xero OAuth 2.0 app for PHP",
   "type": "project",
+  "autoload": {
+    "psr-0": {
+        "ox": "src/"
+    }
+  },
   "require": {
     "xeroapi/xero-php-oauth2": "2.5.4",
     "monolog/monolog": "1.0",
