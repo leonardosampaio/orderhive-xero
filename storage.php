@@ -1,11 +1,26 @@
 <?php
 class StorageClass
 {
+	private $tokenJsonFile = __DIR__.'/token.json';
 	function __construct() {
 		if( !isset($_SESSION) ){
         	$this->init_session();
     	}
+		
+		if (isset($_REQUEST['debug']))
+        {
+			$this->sessionFromFile();
+		}
    	}
+
+	private function sessionFromFile()
+	{
+		if (file_exists($this->tokenJsonFile))
+		{
+			$arr = (array)json_decode(file_get_contents($this->tokenJsonFile));
+			$_SESSION['oauth2'] = $arr;
+		}
+	}
 
    	public function init_session(){
     	session_start();
@@ -29,6 +44,8 @@ class StorageClass
 	        'refresh_token' => $refreshToken,
 	        'id_token' => $idToken
 	    ];
+
+		file_put_contents($this->tokenJsonFile, json_encode($_SESSION['oauth2']));
 	}
 
 	public function getToken()
