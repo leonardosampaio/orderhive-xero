@@ -6,3 +6,5 @@ composer.lock
 .DS_Store
 temp
 .history
+.vscode
+configuration.json
