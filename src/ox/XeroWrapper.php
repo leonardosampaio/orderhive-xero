@@ -54,6 +54,8 @@ class XeroWrapper
 	 */
 	private function getAllItems()
 	{
+		//FIXME cache X minutes
+
 		$result = [];
 		$getItemsResult = $this->apiInstance->getItems($this->xeroTenantId);
 		foreach($getItemsResult->getItems() as $item)
@@ -81,7 +83,7 @@ class XeroWrapper
 		}
 		else
 		{
-			//TODO error handling
+			//FIXME error handling
 			return null;
 		}
 		
@@ -90,53 +92,75 @@ class XeroWrapper
 	/**
 	 * Breaks down bundle items in individual line items
 	 */
-	public function updateBundleLineItems($orderhiveProducts = [])
+	public function updateBundleLineItems($orderhiveProducts = [], $invoiceId = null)
 	{
 		if (!is_array($orderhiveProducts) || empty($orderhiveProducts))
 		{
+			//FIXME log no orderhive products 
 			return false;
 		}
-
-		$items = $this->getAllItems();
-
-		//$where = 'Status=="VOIDED"';
-		$where = 'Date=DateTime(2021, 10, 13)';
+		
 		$allInvoices = [];
-		$page = 1;
-		$retry = false;
-		do
+		if ($invoiceId)
 		{
-			$getInvoicesResult = $this->apiInstance->getInvoices($this->xeroTenantId, null, $where, null, null, null, null, null, $page);
-
-			if ($getInvoicesResult instanceof Invoices)
+			$getInvoiceResult = $this->apiInstance->getInvoice($this->xeroTenantId, $invoiceId);
+			if ($getInvoiceResult instanceof Invoices)
 			{
-				$retrivedInvoices = $getInvoicesResult->getInvoices(); 
-				$allInvoices = array_merge($allInvoices, $retrivedInvoices);
-				$page++;
+				array_push($allInvoices, $getInvoiceResult->getInvoices()[0]);
 			}
 			else
 			{
-				//TODO error handling
-				$retry = true;
+				//FIXME error handling
 			}
-		} while ($retry || sizeof($retrivedInvoices) >= 100);
+		}
+		else
+		{
+			//get all from today
+			$where = 'Date=DateTime('.date('Y, m, d').')';
+			$page = 1;
+			do
+			{
+				$getInvoicesResult = $this->apiInstance->getInvoices($this->xeroTenantId, null, $where, null, null, null, null, null, $page);
+	
+				$retrivedInvoices = [];
+				if ($getInvoicesResult instanceof Invoices)
+				{
+					$retrivedInvoices = $getInvoicesResult->getInvoices();
+					foreach($retrivedInvoices as $invoice)
+					{
+						//to get line items, first get the full object
+						$getFullInvoiceResult = $this->apiInstance->getInvoice($this->xeroTenantId, $invoice->getInvoiceId());
+						$fullInvoice = $getFullInvoiceResult->getInvoices()[0];
+						array_push($allInvoices, $fullInvoice);
+					}
+					$page++;
+				}
+				else
+				{
+					//FIXME error handling
+				}
+			} while (sizeof($retrivedInvoices) >= 100);
+		}
 
-		$invoicesToUpdateArray = [];
+		if (empty($allInvoices))
+		{
+			//FIXME log no invoices found
+			return false;
+		}
+
+		$items 					= $this->getAllItems();
+		$invoicesToUpdateArray 	= [];
 		foreach($allInvoices as $invoice)
 		{
-			$shouldUpdate = false;
+			$newLineItems 		= [];
+			$lineItems 			= $invoice->getLineItems();
 
-			$getFullInvoiceResult = $this->apiInstance->getInvoice($this->xeroTenantId, $invoice->getInvoiceId());
-			$fullInvoice = $getFullInvoiceResult->getInvoices()[0];
-			$lineItems = $fullInvoice->getLineItems();
-
-			$newLineItems = [];
 			foreach($lineItems as $k => $currentLineItem)
 			{
-				if (isset($orderhiveProducts[$currentLineItem->getItemCode()]['bundle_of']))
+				if (isset($orderhiveProducts[$currentLineItem->getItemCode()]) &&
+					isset($orderhiveProducts[$currentLineItem->getItemCode()]['bundle_of']))
 				{
-					$shouldUpdate = true;
-
+					//replace bundles by individual items
 					unset($lineItems[$k]);
 
 					foreach($orderhiveProducts[$currentLineItem->getItemCode()]['bundle_of'] as $bundleItem)
@@ -158,11 +182,12 @@ class XeroWrapper
 				}
 			}
 
-			if ($shouldUpdate)
+			//has bundles, update
+			if (!empty($newLineItems))
 			{
 				$lineItems = array_merge($lineItems, $newLineItems);
-				$fullInvoice->setLineItems($lineItems);
-				$invoicesToUpdateArray[] = $fullInvoice;
+				$invoice->setLineItems($lineItems);
+				$invoicesToUpdateArray[] = $invoice;
 			}
 		}
 
@@ -177,7 +202,7 @@ class XeroWrapper
 				return true;
 			}
 			else {
-				//TODO error handling
+				//FIXME error handling
 			}
 		}
 
