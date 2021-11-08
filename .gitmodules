@@ -1,0 +1,3 @@
+[submodule "OrderHive-PHP-SDK"]
+	path = OrderHive-PHP-SDK
+	url = https://github.com/leonardosampaio/OrderHive-PHP-SDK.git

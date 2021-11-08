@@ -16,9 +16,11 @@ class XeroWrapper
 	private $apiInstance;
 	private $xeroTenantId;
 
-	function __construct($clientId, $clientSecret, $redirectUri, $tokenJsonFile) {
+	function __construct($clientId, $clientSecret, $redirectUri) {
 
-		$json = json_decode(file_get_contents($tokenJsonFile));
+		$jsonTokenFile = __DIR__.'/../../token.json';
+
+		$json = json_decode(file_get_contents($jsonTokenFile));
 
 		$this->xeroTenantId = $json->tenant_id;
 
@@ -42,7 +44,7 @@ class XeroWrapper
 			$json->refresh_token = $newAccessToken->getRefreshToken();
 			$json->id_token = $newAccessToken->getValues()["id_token"];
 
-			file_put_contents($tokenJsonFile, json_encode($json));
+			file_put_contents($jsonTokenFile, json_encode($json));
 		} 
 
 		$config = Configuration::getDefaultConfiguration()->setAccessToken($json->token);		  

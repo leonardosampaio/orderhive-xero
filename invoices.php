@@ -5,13 +5,11 @@ require __DIR__ . '/vendor/autoload.php';
 use ox\XeroWrapper;
 
 $configuration = json_decode(file_get_contents(__DIR__.'/configuration.json'));
-$clientId = $configuration->CLIENT_ID;
-$clientSecret = $configuration->CLIENT_SECRET;
-$redirectUri = $configuration->REDIRECT_URI;
+$clientId = $configuration->credentials->xero->client_id;
+$clientSecret = $configuration->credentials->xero->client_secret;
+$redirectUri = $configuration->credentials->xero->redirect_uri;
 
-$tokenJsonFile = __DIR__.'/trial.json';
-
-$x = new XeroWrapper($clientId, $clientSecret, $redirectUri, $tokenJsonFile);
+$x = new XeroWrapper($clientId, $clientSecret, $redirectUri);
 
 $orderhiveProducts = [
     'BUNDLE1'=>[

@@ -7,4 +7,8 @@ composer.lock
 temp
 .history
 .vscode
+
 configuration.json
+token.json
+trial.json
+kage.json

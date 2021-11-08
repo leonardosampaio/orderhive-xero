@@ -1,21 +1,23 @@
 <?php
     ini_set('display_errors', 'On');
-    require __DIR__ . '/vendor/autoload.php';
-    require_once('storage.php');
 
-    $dotenv = Dotenv\Dotenv::createImmutable(__DIR__);
-	$dotenv->load();
-	$clientId = getenv('CLIENT_ID');
-	$clientSecret = getenv('CLIENT_SECRET');
-	$redirectUri = getenv('REDIRECT_URI');
+    require __DIR__ . '/../vendor/autoload.php';
+
+    use ox\StorageClass;
+    
+    $configurationFile = __DIR__.'/../configuration.json';
+    if (!file_exists($configurationFile)) {
+        die($configurationFile . ' not found');
+    }
+    $configuration = json_decode(file_get_contents($configurationFile));
 
     // Storage Classe uses sessions for storing token > extend to your DB of choice
-    $storage = new StorageClass();  
+    $storage = new StorageClass(__DIR__.'/../token.json');
 
     $provider = new \League\OAuth2\Client\Provider\GenericProvider([
-        'clientId'                => $clientId,   
-        'clientSecret'            => $clientSecret,
-        'redirectUri'             => $redirectUri,
+        'clientId'                => $configuration->credentials->xero->clientId,   
+        'clientSecret'            => $configuration->credentials->xero->clientSecret,
+        'redirectUri'             => $configuration->credentials->xero->redirectUri,
         'urlAuthorize'            => 'https://login.xero.com/identity/connect/authorize',
         'urlAccessToken'          => 'https://identity.xero.com/connect/token',
         'urlResourceOwnerDetails' => 'https://api.xero.com/api.xro/2.0/Organisation'
@@ -52,15 +54,22 @@
             // Get Array of Tenant Ids
             $result = $identityInstance->getConnections();
 
+            $tenantId = $result[0]->getTenantId();
+            if ($tenantId != $configuration->credentials->xero->tenant_id)
+            {
+                die("Unexpected tenant_id ($tenantId), check your configuration file");
+            }
+
             // Save my token, expiration and tenant_id
             $storage->setToken(
                 $accessToken->getToken(),
                 $accessToken->getExpires(),
-                $result[0]->getTenantId(),  
+                $tenantId, 
                 $accessToken->getRefreshToken(),
                 $accessToken->getValues()["id_token"]
             );
    
+            //FIXME sucess
             header('Location: ' . './get.php');
             exit();
      

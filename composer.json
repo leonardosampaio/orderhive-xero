@@ -1,4 +1,10 @@
 {
+  "repositories": [
+    {
+        "type": "path",
+        "url": "OrderHive-PHP-SDK"
+    }
+  ],
   "name": "xeroapi/xero-php-oauth2-app",
   "description": "Xero OAuth 2.0 app for PHP",
   "type": "project",
@@ -11,7 +17,8 @@
     "xeroapi/xero-php-oauth2": "2.5.4",
     "monolog/monolog": "1.0",
     "vlucas/phpdotenv": "^4.1",
-    "guzzlehttp/psr7": "^1.8.2"
+    "guzzlehttp/psr7": "^1.8.2",
+    "orderhive/php-sdk": "dev-master"
   },
   "license": "MIT",
   "authors": [

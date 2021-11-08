@@ -1,8 +1,15 @@
 <?php
+
+namespace ox;
+
 class StorageClass
 {
-	private $tokenJsonFile = __DIR__.'/token.json';
-	function __construct() {
+	private $tokenJsonFile;
+
+	function __construct($tokenJsonFile) {
+		
+		$this->tokenJsonFile = $tokenJsonFile;
+
 		if( !isset($_SESSION) ){
         	$this->init_session();
     	}
