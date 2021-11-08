@@ -2,7 +2,11 @@
 
 require __DIR__ . '/vendor/autoload.php';
 
+use ox\Logger;
 use ox\XeroWrapper;
+
+$logFile = __DIR__.'/logs/orderhive_xero-cli-'.date('Y-m-d_His').'.log';
+Logger::getInstance()->setOutputFile($logFile);
 
 $configuration = json_decode(file_get_contents(__DIR__.'/configuration.json'));
 $clientId = $configuration->credentials->xero->client_id;

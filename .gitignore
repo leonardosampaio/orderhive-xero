@@ -12,3 +12,4 @@ configuration.json
 token.json
 trial.json
 kage.json
+*.log

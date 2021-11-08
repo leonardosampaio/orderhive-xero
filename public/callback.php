@@ -28,11 +28,13 @@ $provider = new \League\OAuth2\Client\Provider\GenericProvider([
 // If we don't have an authorization code then get one
 if (!isset($_GET['code']))
 {
+    http_response_code(401);
     die("Something went wrong, no authorization code found");
 }
 // Check given state against previously stored one to mitigate CSRF attack
 elseif (empty($_GET['state']) || ($_GET['state'] !== $_SESSION['oauth2state']))
 {
+    http_response_code(401);
     unset($_SESSION['oauth2state']);
     die('Invalid state');
 } 
@@ -61,6 +63,7 @@ else
         $tenantId = $result[0]->getTenantId();
         if ($tenantId != $configuration->credentials->xero->tenant_id)
         {
+            http_response_code(401);
             die("Unexpected tenant_id ($tenantId), check your configuration file");
         }
 
@@ -73,10 +76,11 @@ else
             $accessToken->getValues()["id_token"]
         );
 
-        echo "Sucessfully connected to Xero API, you can close this window now";
-        die();
+        http_response_code(200);
+        die("Sucessfully connected to Xero API, you can close this window now");
 
     } catch (\League\OAuth2\Client\Provider\Exception\IdentityProviderException $e) {
+        http_response_code(400);
         die("Error connecting to Xero: " . $e->getMessage());
     }
 }

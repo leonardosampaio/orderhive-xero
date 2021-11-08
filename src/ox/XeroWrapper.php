@@ -20,6 +20,12 @@ class XeroWrapper
 
 		$jsonTokenFile = __DIR__.'/../../token.json';
 
+		if (!file_exists($jsonTokenFile))
+		{
+			http_response_code(400);
+			die("$jsonTokenFile not found");
+		}
+
 		$json = json_decode(file_get_contents($jsonTokenFile));
 
 		$this->xeroTenantId = $json->tenant_id;
@@ -63,7 +69,7 @@ class XeroWrapper
 
 		$result = [];
 
-		if (!file_exists($cacheFile) || time() > json_decode(file_get_contents($cacheFile), true)->expires)
+		if (!file_exists($cacheFile) || time() > json_decode(file_get_contents($cacheFile))->expires)
         {
 			$liveRequest = true;
 
@@ -84,7 +90,7 @@ class XeroWrapper
 		}
 		else
 		{
-            $result = (json_decode(file_get_contents($cacheFile), true))->items;
+            $result = (json_decode(file_get_contents($cacheFile)))->items;
         }
 
 		if ($liveRequest)
@@ -223,7 +229,7 @@ class XeroWrapper
 						$newLineItem = new LineItem;
 						$newLineItem
 							->setDescription($bundleItem['description'])
-							->setQuantity($bundleItem['quantity'] * $currentLineItem->getQuantity())
+							->setQuantity($bundleItem['componentQuantity'] * $currentLineItem->getQuantity())
 							->setUnitAmount($bundleItem['cost'])
 							->setItemCode($bundleItem['sku'])
 							->setAccountCode($currentLineItem->getAccountCode());

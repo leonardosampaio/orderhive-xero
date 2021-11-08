@@ -27,12 +27,12 @@ class OrderhiveWrapper {
 
         $params = ['query'=>'','types'=>['1','7']];
 
-        $cacheFile = __DIR__.'/../cache/orderhive-products.json';
+        $cacheFile = __DIR__.'/../../cache/orderhive-products.json';
         $liveRequest = false;
 
         $result = [];
 
-        if (!file_exists($cacheFile) || time() > json_decode(file_get_contents($cacheFile), true)->expires)
+        if (!file_exists($cacheFile) || time() > json_decode(file_get_contents($cacheFile))->expires)
         {
             $liveRequest = true;
 
@@ -73,9 +73,9 @@ class OrderhiveWrapper {
 
                     foreach($apiResponse['products'] as $product)
                     {
-                        if (isset($product['lower_sku']))
+                        if (isset($product['sku']))
                         {
-                            $products[trim($product['lower_sku'])] = $product;
+                            $products[trim($product['sku'])] = $product;
                         }
 
                         if (isset($product['productBundles']) && sizeof($product['productBundles'])>0)
@@ -90,7 +90,7 @@ class OrderhiveWrapper {
 
                                 $bundles[$bundledProductId][] = [
                                     'sku'=>$product['sku'],
-                                    'lower_sku'=>$product['lower_sku'],
+                                    'price'=>$product['product_prices'][0]['price'], //FIXME price from order?
                                     'componentProductId'=>$productBundle['componentProductId'],
                                     'componentQuantity'=>$productBundle['componentQuantity']];
                             }
@@ -112,7 +112,7 @@ class OrderhiveWrapper {
         }
         else
         {
-            $result = (json_decode(file_get_contents($cacheFile), true))->products;
+            $result = (json_decode(file_get_contents($cacheFile), true))['products'];
         }
 
         if ($liveRequest)
