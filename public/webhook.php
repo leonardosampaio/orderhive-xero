@@ -1,23 +1,32 @@
 <?php
 
+$configurationFile = __DIR__.'/../configuration.json';
+if (!file_exists($configurationFile)) {
+    die("Error: $configurationFile not found");
+}
+$configuration = json_decode(file_get_contents($configurationFile));
+
+$rawPayload = file_get_contents('php://input');
+
 // Compute the payload with HMACSHA256 with base64 encoding
 $computedSignatureKey = base64_encode(
-    hash_hmac('sha256', $rawPayload, $webhookKey, true)
+    hash_hmac('sha256', $rawPayload, $configuration->credentials->xero->webhook_key, true)
 );
   
 // Signature key from Xero request
-$xeroSignatureKey = $_SERVER['HTTP_X_XERO_SIGNATURE'];
+$xeroSignatureKey = isset($_SERVER['HTTP_X_XERO_SIGNATURE']) ?
+    $_SERVER['HTTP_X_XERO_SIGNATURE'] : null;
 
 // Response HTTP status code when:
 //   200: Correctly signed payload
 //   401: Incorrectly signed payload
-if (!hash_equals($computedSignatureKey, $xeroSignatureKey))
+if (!$xeroSignatureKey || !hash_equals($computedSignatureKey, $xeroSignatureKey))
 {
     http_response_code(401);
     die();
 }
 
-require __DIR__ . '/vendor/autoload.php';
+require __DIR__ . '/../vendor/autoload.php';
 
 use ox\XeroWrapper;
 use ox\OrderhiveWrapper;
@@ -35,14 +44,6 @@ ini_set('memory_limit', '256M');
 ini_set('display_errors', '1');
 ini_set('display_startup_errors', '1');
 error_reporting(E_ALL);
-
-$rawPayload = file_get_contents('php://input');
-
-$configurationFile = __DIR__.'/configuration.json';
-if (!file_exists($configurationFile)) {
-    die($configurationFile . ' not found');
-}
-$configuration = json_decode(file_get_contents($configurationFile));
 
 //cache time to reuse expensive API queries
 $cacheInMinutes = isset($configuration->cacheInMinutes) ? $configuration->cacheInMinutes : 10;
