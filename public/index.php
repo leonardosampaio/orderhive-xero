@@ -14,9 +14,9 @@
 	$storage = new StorageClass(__DIR__.'/../token.json');
 
 	$provider = new \League\OAuth2\Client\Provider\GenericProvider([
-        'clientId'                => $configuration->credentials->xero->clientId,   
-        'clientSecret'            => $configuration->credentials->xero->clientSecret,
-        'redirectUri'             => $configuration->credentials->xero->redirectUri,
+        'clientId'                => $configuration->credentials->xero->client_id,   
+        'clientSecret'            => $configuration->credentials->xero->client_secret,
+        'redirectUri'             => $configuration->credentials->xero->redirect_uri,
         'urlAuthorize'            => 'https://login.xero.com/identity/connect/authorize',
         'urlAccessToken'          => 'https://identity.xero.com/connect/token',
         'urlResourceOwnerDetails' => 'https://api.xero.com/api.xro/2.0/Organisation'
