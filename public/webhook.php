@@ -32,6 +32,8 @@ use ox\XeroWrapper;
 use ox\OrderhiveWrapper;
 use ox\Logger;
 
+Logger::getInstance()->log("Webhook call");
+
 //https://www.php.net/manual/pt_BR/function.set-time-limit.php
 //application execution limit: 1 hour
 set_time_limit(60*60);
@@ -41,9 +43,9 @@ set_time_limit(60*60);
 ini_set('memory_limit', '256M');
 
 //show errors
-ini_set('display_errors', '1');
-ini_set('display_startup_errors', '1');
-error_reporting(E_ALL);
+ini_set('display_errors', '0');
+ini_set('display_startup_errors', '0');
+error_reporting(0);
 
 //cache time to reuse expensive API queries
 $cacheInMinutes = isset($configuration->cacheInMinutes) ? $configuration->cacheInMinutes : 10;
@@ -51,7 +53,7 @@ $cacheInMinutes = isset($configuration->cacheInMinutes) ? $configuration->cacheI
 //log to file
 $logFile = isset($configuration->logFile) && !empty($configuration->logFile) ?
 	$configuration->logFile : 
-	'./orderhive_dimass-sync-'.date('Y-m-d_His').'.log';
+	__DIR__.'/../orderhive_xero-sync-'.date('Y-m-d_His').'.log';
 Logger::getInstance()->setModes(['file']);
 Logger::getInstance()->setOutputFile($logFile);
 
@@ -76,7 +78,7 @@ $orderhiveWrapper = new OrderhiveWrapper(
     $app,
     $configuration->retries,
     $configuration->timeBetweenRetries);
-$orderhiveProducts = $orderhiveWrapper->getProducts($cacheInMinutes)['result'];
+$orderhiveProducts = $orderhiveWrapper->getProducts($configuration->cacheInMinutes)['result'];
 
 $xeroWrapper = new XeroWrapper(
     $configuration->credentials->xero->client_id,
@@ -96,7 +98,8 @@ if (isset($payloadJson->events) && !empty($payloadJson->events))
             in_array($event->eventType, ['UPDATED','CREATED']))
         {
             $invoiceId = $event->resourceId;
-            $xeroWrapper->updateBundleLineItems($orderhiveProducts, $invoiceId);
+            Logger::getInstance()->log("Trying to update invoice $invoiceId");
+            $xeroWrapper->updateBundleLineItems($configuration->cacheInMinutes, $orderhiveProducts, $invoiceId);
         }
     }
 }

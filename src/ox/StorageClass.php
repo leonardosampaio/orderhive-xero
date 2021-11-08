@@ -13,21 +13,7 @@ class StorageClass
 		if( !isset($_SESSION) ){
         	$this->init_session();
     	}
-		
-		if (isset($_REQUEST['debug']))
-        {
-			$this->sessionFromFile();
-		}
    	}
-
-	private function sessionFromFile()
-	{
-		if (file_exists($this->tokenJsonFile))
-		{
-			$arr = (array)json_decode(file_get_contents($this->tokenJsonFile));
-			$_SESSION['oauth2'] = $arr;
-		}
-	}
 
    	public function init_session(){
     	session_start();

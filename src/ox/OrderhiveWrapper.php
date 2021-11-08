@@ -21,8 +21,8 @@ class OrderhiveWrapper {
     */
     public function getProducts($cacheInMinutes)
     {
-        //FIXME cache
-
+        Logger::getInstance()->log("Retrieving all Orderhive products");
+        
         $starttime = microtime(true);
 
         $params = ['query'=>'','types'=>['1','7']];
@@ -32,7 +32,7 @@ class OrderhiveWrapper {
 
         $result = [];
 
-        if (!file_exists($cacheFile) || time() > json_decode($cacheFile)->expires)
+        if (!file_exists($cacheFile) || time() > json_decode(file_get_contents($cacheFile), true)->expires)
         {
             $liveRequest = true;
 
@@ -110,7 +110,8 @@ class OrderhiveWrapper {
                 }
             }
         }
-        else {
+        else
+        {
             $result = (json_decode(file_get_contents($cacheFile), true))->products;
         }
 

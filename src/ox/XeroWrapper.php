@@ -54,21 +54,54 @@ class XeroWrapper
 	/**
 	 * List all items by code (SKU)
 	 */
-	private function getAllItems()
+	private function getAllItems($cacheInMinutes)
 	{
-		//FIXME cache X minutes
+		Logger::getInstance()->log("Retrieving all Xero items");
+
+		$cacheFile = __DIR__.'/../cache/xero-items.json';
+		$liveRequest = false;
 
 		$result = [];
-		$getItemsResult = $this->apiInstance->getItems($this->xeroTenantId);
-		foreach($getItemsResult->getItems() as $item)
-		{
-			$result[$item->getCode()] = $item;
+
+		if (!file_exists($cacheFile) || time() > json_decode(file_get_contents($cacheFile), true)->expires)
+        {
+			$liveRequest = true;
+
+			$getItemsResult = $this->apiInstance->getItems($this->xeroTenantId);
+
+			if ($getItemsResult instanceof Items)
+			{
+				foreach($getItemsResult->getItems() as $item)
+				{
+					$result[$item->getCode()] = $item;
+				}
+			}
+			else
+			{
+				Logger::getInstance()->log("Error retrieving Xero items");
+				Logger::getInstance()->log(json_encode($getItemsResult));
+			}
 		}
+		else
+		{
+            $result = (json_decode(file_get_contents($cacheFile), true))->items;
+        }
+
+		if ($liveRequest)
+        {
+            file_put_contents($cacheFile, json_encode([
+                'items'=>$result,
+                'expires'=>strtotime("+$cacheInMinutes minutes")
+            ]));
+        }
+
 		return $result;
 	}
 
 	private function createItem($code, $name)
 	{
+		Logger::getInstance()->log("Creating item $code $name");
+
 		$item = new Item();
 		$item->setName($name);
 		$item->setCode($code);
@@ -85,8 +118,9 @@ class XeroWrapper
 		}
 		else
 		{
-			//FIXME error handling
-			return null;
+			Logger::getInstance()->log("Error creating item $code $name");
+			Logger::getInstance()->log(json_encode($result));
+			return false;
 		}
 		
 	}
@@ -94,11 +128,11 @@ class XeroWrapper
 	/**
 	 * Breaks down bundle items in individual line items
 	 */
-	public function updateBundleLineItems($orderhiveProducts = [], $invoiceId = null)
+	public function updateBundleLineItems($cacheInMinutes, $orderhiveProducts = [], $invoiceId = null)
 	{
 		if (!is_array($orderhiveProducts) || empty($orderhiveProducts))
 		{
-			//FIXME log no orderhive products 
+			Logger::getInstance()->log("No Orderhive products, exiting");
 			return false;
 		}
 		
@@ -108,11 +142,12 @@ class XeroWrapper
 			$getInvoiceResult = $this->apiInstance->getInvoice($this->xeroTenantId, $invoiceId);
 			if ($getInvoiceResult instanceof Invoices)
 			{
+				Logger::getInstance()->log("Retrieved full invoice $invoiceId");
 				array_push($allInvoices, $getInvoiceResult->getInvoices()[0]);
 			}
 			else
 			{
-				//FIXME error handling
+				Logger::getInstance()->log("Error retrieving full invoice $invoiceId");
 			}
 		}
 		else
@@ -127,33 +162,45 @@ class XeroWrapper
 				$retrivedInvoices = [];
 				if ($getInvoicesResult instanceof Invoices)
 				{
+					Logger::getInstance()->log("Retrieved all invoices from today");
+
 					$retrivedInvoices = $getInvoicesResult->getInvoices();
 					foreach($retrivedInvoices as $invoice)
 					{
 						//to get line items, first get the full object
 						$getFullInvoiceResult = $this->apiInstance->getInvoice($this->xeroTenantId, $invoice->getInvoiceId());
-						$fullInvoice = $getFullInvoiceResult->getInvoices()[0];
-						array_push($allInvoices, $fullInvoice);
+						if ($getFullInvoiceResult instanceof Invoices)
+						{
+							Logger::getInstance()->log("Retrieved full invoice $invoiceId");
+							$fullInvoice = $getFullInvoiceResult->getInvoices()[0];
+							array_push($allInvoices, $fullInvoice);
+						}
+						else
+						{
+							Logger::getInstance()->log("Error retrieving full invoice $invoiceId");
+						}
 					}
 					$page++;
 				}
 				else
 				{
-					//FIXME error handling
+					Logger::getInstance()->log("Error retrieving all invoices from today");
 				}
 			} while (sizeof($retrivedInvoices) >= 100);
 		}
 
 		if (empty($allInvoices))
 		{
-			//FIXME log no invoices found
+			Logger::getInstance()->log("No invoices retrieved, exiting");
 			return false;
 		}
 
-		$items 					= $this->getAllItems();
+		$items 					= $this->getAllItems($cacheInMinutes);
 		$invoicesToUpdateArray 	= [];
 		foreach($allInvoices as $invoice)
 		{
+			Logger::getInstance()->log("Processing invoice " . $invoice->getInvoiceId());
+
 			$newLineItems 		= [];
 			$lineItems 			= $invoice->getLineItems();
 
@@ -162,7 +209,7 @@ class XeroWrapper
 				if (isset($orderhiveProducts[$currentLineItem->getItemCode()]) &&
 					isset($orderhiveProducts[$currentLineItem->getItemCode()]['bundle_of']))
 				{
-					//replace bundles by individual items
+					Logger::getInstance()->log("Replacing bundle ".$currentLineItem->getItemCode()." by individual items");
 					unset($lineItems[$k]);
 
 					foreach($orderhiveProducts[$currentLineItem->getItemCode()]['bundle_of'] as $bundleItem)
@@ -172,6 +219,7 @@ class XeroWrapper
 							$this->createItem($bundleItem['sku'], $bundleItem['description']);
 						}
 
+						Logger::getInstance()->log("Registering new line item with " . $bundleItem['sku']);
 						$newLineItem = new LineItem;
 						$newLineItem
 							->setDescription($bundleItem['description'])
@@ -184,31 +232,36 @@ class XeroWrapper
 				}
 			}
 
-			//has bundles, update
 			if (!empty($newLineItems))
 			{
 				$lineItems = array_merge($lineItems, $newLineItems);
 				$invoice->setLineItems($lineItems);
 				$invoicesToUpdateArray[] = $invoice;
 			}
+			else {
+				Logger::getInstance()->log("Invoice does not have bundles, ignoring");
+			}
 		}
 
 		if (!empty($invoicesToUpdateArray))
 		{
+			Logger::getInstance()->log("Updating ".sizeof($invoicesToUpdateArray)." invoices");
+
 			$invoicesToUpdate = new Invoices;
 			$invoicesToUpdate->setInvoices($invoicesToUpdateArray);
 			$updateResult = $this->apiInstance->updateOrCreateInvoices($this->xeroTenantId, $invoicesToUpdate);
 
 			if ($updateResult instanceof Invoices)
 			{
+				Logger::getInstance()->log("Sucessfully updated ".sizeof($updateResult->getInvoices())." invoices");
 				return true;
 			}
 			else {
-				//FIXME error handling
+				Logger::getInstance()->log("Error updating invoices");
+				Logger::getInstance()->log(json_encode($updateResult));
 			}
 		}
 
 		return false;
 	}
 }
-?>
