@@ -90,7 +90,6 @@ class OrderhiveWrapper {
 
                                 $bundles[$bundledProductId][] = [
                                     'sku'=>$product['sku'],
-                                    'price'=>$product['product_prices'][0]['price'], //FIXME price from order?
                                     'componentProductId'=>$productBundle['componentProductId'],
                                     'componentQuantity'=>$productBundle['componentQuantity']];
                             }
