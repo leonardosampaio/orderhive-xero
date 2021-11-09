@@ -32,7 +32,7 @@ class OrderhiveWrapper {
 
         $result = [];
 
-        if (!file_exists($cacheFile) || time() > json_decode(file_get_contents($cacheFile))->expires)
+        if ($cacheInMinutes == 0 || !file_exists($cacheFile) || time() > json_decode(file_get_contents($cacheFile))->expires)
         {
             $liveRequest = true;
 
@@ -114,7 +114,7 @@ class OrderhiveWrapper {
             $result = (json_decode(file_get_contents($cacheFile), true))['products'];
         }
 
-        if ($liveRequest)
+        if ($cacheInMinutes !== 0 && $liveRequest)
         {
             file_put_contents($cacheFile, json_encode([
                 'products'=>$result,

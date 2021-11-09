@@ -68,7 +68,7 @@ class XeroWrapper
 
 		$result = [];
 
-		if (!file_exists($cacheFile) || time() > json_decode(file_get_contents($cacheFile))->expires)
+		if ($cacheInMinutes == 0 || !file_exists($cacheFile) || time() > json_decode(file_get_contents($cacheFile))->expires)
         {
 			$liveRequest = true;
 
@@ -92,7 +92,7 @@ class XeroWrapper
             $result = (json_decode(file_get_contents($cacheFile)))->items;
         }
 
-		if ($liveRequest)
+		if ($cacheInMinutes !== 0 && $liveRequest)
         {
             file_put_contents($cacheFile, json_encode([
                 'items'=>$result,
