@@ -109,7 +109,7 @@ foreach ($jsonPayloadFiles as $jsonPayloadFile)
         }
         else
         {
-            Logger::getInstance()->log("$jsonPayloadFile has an invalid request payload, deleting file");
+            Logger::getInstance()->log("$jsonPayloadFile has an invalid request payload, deleting");
             unlink($jsonPayloadFile);
         }
     }

@@ -1,7 +1,9 @@
 <?php
 
 $configurationFile = __DIR__.'/../configuration.json';
-if (!file_exists($configurationFile)) {
+if (!file_exists($configurationFile))
+{
+    http_response_code(400);
     die("Error: $configurationFile not found");
 }
 $configuration = json_decode(file_get_contents($configurationFile));
