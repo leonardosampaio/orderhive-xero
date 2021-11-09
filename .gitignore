@@ -13,3 +13,6 @@ token.json
 trial.json
 kage.json
 *.log
+
+xero-items.json
+orderhive-products.json

@@ -26,83 +26,16 @@ if (!$xeroSignatureKey || !hash_equals($computedSignatureKey, $xeroSignatureKey)
     die();
 }
 
-require __DIR__ . '/../vendor/autoload.php';
-
-use ox\XeroWrapper;
-use ox\OrderhiveWrapper;
-use ox\Logger;
-
-//https://www.php.net/manual/pt_BR/function.set-time-limit.php
-//application execution limit: 1 hour
-set_time_limit(60*60);
-
-//https://haydenjames.io/understanding-php-memory_limit
-//maximum memory to be used
-ini_set('memory_limit', '256M');
-
-//show errors
-ini_set('display_errors', '0');
-ini_set('display_startup_errors', '0');
-error_reporting(0);
-
-//cache time to reuse expensive API queries
-$cacheInMinutes = isset($configuration->cacheInMinutes) ? $configuration->cacheInMinutes : 10;
-
-//only log to file
-$logFile = __DIR__.'/../logs/orderhive_xero-webhook-'.date('Y-m-d_His').'.log';
-Logger::getInstance()->setModes(['file']);
-Logger::getInstance()->setOutputFile($logFile);
-
-Logger::getInstance()->log("Webhook call");
-
-//https://www.php.net/manual/pt_BR/function.php-ini-loaded-file.php
-Logger::getInstance()->log("php.ini location: '".php_ini_loaded_file()."'");
-
-//see https://www.php.net/manual/en/timezones.php
-if (isset($configuration->phpTimezone) && !empty($configuration->phpTimezone))
-{
-    Logger::getInstance()->log("Setting PHP timezone '" . $configuration->phpTimezone . "'");
-    date_default_timezone_set($configuration->phpTimezone);
-}
-Logger::getInstance()->log("Current PHP timezone: '" . date_default_timezone_get() . "'");
-
-$orderhiveAPIConfig = [
-    'id_token' => $configuration->credentials->orderhive->id_token,
-    'refresh_token' => $configuration->credentials->orderhive->refresh_token
-];
-$app = new \OrderHive\OrderHive($orderhiveAPIConfig);
-$orderhiveWrapper = new OrderhiveWrapper(
-    $app,
-    $configuration->retries,
-    $configuration->timeBetweenRetries);
-$orderhiveProducts = $orderhiveWrapper->getProducts($configuration->cacheInMinutes)['result'];
-
-$xeroWrapper = new XeroWrapper(
-    $configuration->credentials->xero->client_id,
-    $configuration->credentials->xero->client_secret,
-    $configuration->credentials->xero->redirect_uri,
-    $configuration->credentials->xero->webhook_key
-);
-
 $payloadJson = json_decode($rawPayload);
 
-if ($payloadJson && isset($payloadJson->events) && !empty($payloadJson->events))
+if ($payloadJson && isset($payloadJson->events))
 {
-    foreach($payloadJson->events as $event)
-    {
-        if ($event->tenantId == $configuration->credentials->xero->tenant_id &&
-            $event->eventCategory == 'INVOICE' &&
-            in_array($event->eventType, ['UPDATE','CREATE']))
-        {
-            $invoiceId = $event->resourceId;
-            Logger::getInstance()->log("Trying to update invoice $invoiceId");
-            $xeroWrapper->updateBundleLineItems($configuration->cacheInMinutes, $orderhiveProducts, $invoiceId);
-        }
-    }
+    file_put_contents(
+        __DIR__.'/../cache/webhook-payload-'.rand(100000,999999).'-'.date('Ymd_His').'.json',
+        $rawPayload);
+    http_response_code(200);
 }
 else {
-    Logger::getInstance()->log("No events found in payload");
+    http_response_code(400);
+    die();
 }
-
-http_response_code(200);
-die();
