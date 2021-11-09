@@ -64,7 +64,7 @@ class XeroWrapper
 	{
 		Logger::getInstance()->log("Retrieving all Xero items");
 
-		$cacheFile = __DIR__.'/../cache/xero-items.json';
+		$cacheFile = __DIR__.'/../../cache/xero-items.json';
 		$liveRequest = false;
 
 		$result = [];
