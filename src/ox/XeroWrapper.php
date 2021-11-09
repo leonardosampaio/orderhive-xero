@@ -22,7 +22,6 @@ class XeroWrapper
 
 		if (!file_exists($jsonTokenFile))
 		{
-			http_response_code(400);
 			die("$jsonTokenFile not found");
 		}
 
@@ -218,7 +217,8 @@ class XeroWrapper
 					Logger::getInstance()->log("Replacing bundle ".$currentLineItem->getItemCode()." by individual items");
 					unset($lineItems[$k]);
 
-					foreach($orderhiveProducts[$currentLineItem->getItemCode()]['bundle_of'] as $bundleItem)
+					$bundleItems = $orderhiveProducts[$currentLineItem->getItemCode()]['bundle_of'];
+					foreach($bundleItems as $bundleItem)
 					{
 						if (!isset($items[$bundleItem['sku']]))
 						{
@@ -230,7 +230,7 @@ class XeroWrapper
 						$newLineItem
 							->setDescription($bundleItem['description'])
 							->setQuantity($bundleItem['componentQuantity'] * $currentLineItem->getQuantity())
-							->setUnitAmount($bundleItem['cost'])
+							->setUnitAmount($currentLineItem->getUnitAmount() / sizeof($bundleItems))
 							->setItemCode($bundleItem['sku'])
 							->setAccountCode($currentLineItem->getAccountCode());
 						$newLineItems[] = $newLineItem;
@@ -262,12 +262,14 @@ class XeroWrapper
 				Logger::getInstance()->log("Sucessfully updated ".sizeof($updateResult->getInvoices())." invoices");
 				return true;
 			}
-			else {
+			else
+			{
 				Logger::getInstance()->log("Error updating invoices");
 				Logger::getInstance()->log(json_encode($updateResult));
+				return false;
 			}
 		}
 
-		return false;
+		return true;
 	}
 }
