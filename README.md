@@ -30,7 +30,7 @@ This application gets Invoice create/update events from Xero webhooks and update
 
 ## How this works
 
-Every webhook call is saved as a temporary JSON file to /cache, when webhook-worker.php is executed it checks the payloads previously received and updates, if needed, the line items of the invoices with bundles. Only webhooks with create/update events in Invoices are processed.
+Every webhook call is saved as a temporary JSON file to /cache, when webhook-worker.php is executed it checks the payloads previously received and updates, if needed, the line items of the invoices with bundles. Only webhooks calls with create/update events in Invoices are processed.
 
 ## API References
 
