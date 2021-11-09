@@ -26,6 +26,12 @@ This application gets Invoice create/update events from Xero webhooks and update
 
 4. Configure Delivery URL on Xero (developer.xero.com > App > Webhooks) to point to https://domain.com/path/webhook.php
 
+5. Configure a cron job to call cli/webhook-worker.php
+
+## How this works
+
+Every webhook call is saved as a temporary JSON file to /cache, when webhook-worker.php is executed it checks the payloads previously received and updates, if needed, the line items of the invoices with bundles. Only webhooks with create/update events in Invoices are processed.
+
 ## API References
 
 <https://orderhive.docs.apiary.io/>
