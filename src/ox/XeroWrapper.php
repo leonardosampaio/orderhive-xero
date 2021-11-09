@@ -252,7 +252,7 @@ class XeroWrapper
 
 		if (!empty($invoicesToUpdateArray))
 		{
-			Logger::getInstance()->log("Updating ".sizeof($invoicesToUpdateArray)." invoices");
+			Logger::getInstance()->log("Updating ".sizeof($invoicesToUpdateArray)." invoice(s)");
 
 			$invoicesToUpdate = new Invoices;
 			$invoicesToUpdate->setInvoices($invoicesToUpdateArray);
@@ -260,12 +260,12 @@ class XeroWrapper
 
 			if ($updateResult instanceof Invoices)
 			{
-				Logger::getInstance()->log("Sucessfully updated ".sizeof($updateResult->getInvoices())." invoices");
+				Logger::getInstance()->log("Sucessfully updated ".sizeof($updateResult->getInvoices())." invoice(s)");
 				return true;
 			}
 			else
 			{
-				Logger::getInstance()->log("Error updating invoices");
+				Logger::getInstance()->log("Error updating invoice(s)");
 				Logger::getInstance()->log(json_encode($updateResult));
 				return false;
 			}
