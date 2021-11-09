@@ -230,7 +230,7 @@ class XeroWrapper
 						$newLineItem
 							->setDescription($bundleItem['description'])
 							->setQuantity($bundleItem['componentQuantity'] * $currentLineItem->getQuantity())
-							->setUnitAmount($currentLineItem->getUnitAmount() / sizeof($bundleItems))
+							->setUnitAmount(round($currentLineItem->getUnitAmount() / sizeof($bundleItems), 2))
 							->setItemCode($bundleItem['sku'])
 							->setAccountCode($currentLineItem->getAccountCode());
 						$newLineItems[] = $newLineItem;
