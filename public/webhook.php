@@ -29,12 +29,12 @@ if (!$xeroSignatureKey || !hash_equals($computedSignatureKey, $xeroSignatureKey)
 }
 
 $payloadJson = json_decode($rawPayload);
+$payloadFile = 
+    __DIR__.'/../cache/webhook-payload-'.rand(100000,999999).'-'.date('Ymd_His').'.json';
 
-if ($payloadJson && isset($payloadJson->events))
+if ($payloadJson && isset($payloadJson->events) && touch($payloadFile))
 {
-    file_put_contents(
-        __DIR__.'/../cache/webhook-payload-'.rand(100000,999999).'-'.date('Ymd_His').'.json',
-        $rawPayload);
+    file_put_contents($payloadFile, $rawPayload);
     http_response_code(200);
 }
 else {
