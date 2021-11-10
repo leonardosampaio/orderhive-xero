@@ -24,7 +24,7 @@ This application gets Invoice create/update events from Xero webhooks and update
 
 3. Expose the folder /public on your webserver
 
-4. Configure Delivery URL on Xero (developer.xero.com > App > Webhooks) to point to https://domain.com/path/webhook.php
+4. Configure Delivery URL on Xero (<https://developer.xero.com> > App > Webhooks) to point to https://domain.com/path/webhook.php
 
 5. Configure a cron job to call cli/webhook-worker.php
 
