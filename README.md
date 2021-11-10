@@ -15,7 +15,7 @@ This application gets Invoice create/update events from Xero webhooks and update
         * client_secret - App client secret
         * redirect_uri - URL to redirect to after OAuth2 authencitation, usually https://domain.com/path/callback.php
         * webhook_key - App webhooks key
-        * tenant_id - tenant id that should have invoices processed, get this from token.json after completing the OAuth2 authorization
+        * tenant_id - tenant id that should have invoices processed, get this from token.json or after completing the OAuth2 authorization
     * orderhive
         * id_token - API key
         * refresh_token - API refresh token
@@ -27,6 +27,8 @@ This application gets Invoice create/update events from Xero webhooks and update
 4. Configure Delivery URL on Xero (developer.xero.com > App > Webhooks) to point to https://domain.com/path/webhook.php
 
 5. Configure a cron job to call cli/webhook-worker.php
+
+6. Complete the OAuth2 authorization accessing /index.php and put tenant_id value in configuration.json
 
 ## How this works
 

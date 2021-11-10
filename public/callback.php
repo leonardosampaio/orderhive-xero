@@ -83,7 +83,7 @@ else
         );
 
         http_response_code(200);
-        die("Sucessfully connected to Xero API, you can close this window now");
+        die("tenant_id: $tenantId<br>Sucessfully connected to Xero API, you can close this window now");
 
     } catch (\League\OAuth2\Client\Provider\Exception\IdentityProviderException $e) {
         http_response_code(400);
