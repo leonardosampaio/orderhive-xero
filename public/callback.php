@@ -13,8 +13,14 @@ if (!file_exists($configurationFile))
 }
 $configuration = json_decode(file_get_contents($configurationFile));
 
+$tokenFile = __DIR__.'/../token.json';
+if (!touch($tokenFile))
+{
+    die($tokenFile . ' is not writable');
+}
+
 // Storage Classe uses sessions for storing token > extend to your DB of choice
-$storage = new StorageClass(__DIR__.'/../token.json');
+$storage = new StorageClass($tokenFile);
 
 $provider = new \League\OAuth2\Client\Provider\GenericProvider([
     'clientId'                => $configuration->credentials->xero->client_id,   
