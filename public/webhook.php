@@ -39,5 +39,5 @@ if ($payloadJson && isset($payloadJson->events) && touch($payloadFile))
 }
 else {
     http_response_code(400);
-    die();
 }
+die();
