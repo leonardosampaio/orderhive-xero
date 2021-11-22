@@ -30,6 +30,12 @@ This application gets Invoice create/update events from Xero webhooks and update
 
 6. Complete the OAuth2 authorization accessing /index.php and put tenant_id value in configuration.json
 
+7. If you install this as a custom connection, these are the scopes needed:
+
+* accounting.transactions
+* accounting.transactions.read
+* accouning.settings
+* accouning.settings.read
 ## How this works
 
 Every webhook call is saved as a temporary JSON file to /cache, when webhook-worker.php is executed it checks the payloads previously received and updates, if needed, the line items of the invoices with bundles. Only webhooks calls with create/update events in Invoices are processed.
