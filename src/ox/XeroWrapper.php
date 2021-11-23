@@ -16,7 +16,7 @@ class XeroWrapper
 	private $apiInstance;
 	private $xeroTenantId;
 
-	function __construct($clientId, $clientSecret, $redirectUri) {
+	public function __construct($clientId, $clientSecret, $redirectUri) {
 
 		$jsonTokenFile = __DIR__.'/../../token.json';
 
@@ -59,7 +59,7 @@ class XeroWrapper
 	/**
 	 * List all items by code (SKU)
 	 */
-	private function getAllItems($cacheInMinutes)
+	public function getAllItems($cacheInMinutes)
 	{
 		Logger::getInstance()->log("Retrieving all Xero items");
 
