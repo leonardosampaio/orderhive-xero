@@ -45,3 +45,5 @@ Every webhook call is saved as a temporary JSON file to /cache, when webhook-wor
 <https://orderhive.docs.apiary.io/>
 
 <https://developer.xero.com/documentation/api/accounting/overview/>
+
+Rate limit https://developer.xero.com/documentation/guides/oauth2/limits/#api-rate-limits
