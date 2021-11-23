@@ -44,9 +44,9 @@ set_time_limit(60*60);
 ini_set('memory_limit', '256M');
 
 //show errors
-ini_set('display_errors', '0');
-ini_set('display_startup_errors', '0');
-error_reporting(0);
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
 
 //cache time to reuse expensive API queries
 $cacheInMinutes = isset($configuration->cacheInMinutes) ? $configuration->cacheInMinutes : 10;
