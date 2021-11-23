@@ -100,17 +100,26 @@ foreach ($jsonPayloadFiles as $jsonPayloadFile)
                 $configuration->cacheInMinutes, $orderhiveProducts, $invoiceId))
             {
                 Logger::getInstance()->log("$jsonPayloadFile processed, deleting");
-                unlink($jsonPayloadFile);
+                if (!unlink($jsonPayloadFile))
+                {
+                    Logger::getInstance()->log("Error deleting $jsonPayloadFile");
+                }
             }
             else {
                 Logger::getInstance()->log("$jsonPayloadFile unprocessed, keeping for audit purposes");
-                rename($jsonPayloadFile, $jsonPayloadFile . '.unprocessed');
+                if (!rename($jsonPayloadFile, $jsonPayloadFile . '.unprocessed'))
+                {
+                    Logger::getInstance()->log("Error renaming $jsonPayloadFile");
+                }
             }
         }
         else
         {
             Logger::getInstance()->log("$jsonPayloadFile has an invalid request payload, deleting");
-            unlink($jsonPayloadFile);
+            if (!unlink($jsonPayloadFile))
+            {
+                Logger::getInstance()->log("Error deleting $jsonPayloadFile");
+            }
         }
     }
 }

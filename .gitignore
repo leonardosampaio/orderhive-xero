@@ -9,6 +9,7 @@ temp
 .vscode
 
 configuration.json
+configuration.demo.json
 token.json
 trial.json
 kage.json
