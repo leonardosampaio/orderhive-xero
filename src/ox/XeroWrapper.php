@@ -157,6 +157,8 @@ class XeroWrapper
 		if ($invoiceId)
 		{
 			$getInvoiceResult = $this->apiInstance->getInvoice($this->xeroTenantId, $invoiceId);
+			sleep(1);
+
 			if ($getInvoiceResult instanceof Invoices)
 			{
 				Logger::getInstance()->log("Retrieved full invoice $invoiceId");
@@ -175,6 +177,7 @@ class XeroWrapper
 			do
 			{
 				$getInvoicesResult = $this->apiInstance->getInvoices($this->xeroTenantId, null, $where, null, null, null, null, null, $page);
+				sleep(1);
 	
 				$retrivedInvoices = [];
 				if ($getInvoicesResult instanceof Invoices)
@@ -186,6 +189,8 @@ class XeroWrapper
 					{
 						//to get line items, first get the full object
 						$getFullInvoiceResult = $this->apiInstance->getInvoice($this->xeroTenantId, $invoice->getInvoiceId());
+						sleep(1);
+
 						if ($getFullInvoiceResult instanceof Invoices)
 						{
 							Logger::getInstance()->log("Retrieved full invoice $invoiceId");
@@ -269,6 +274,7 @@ class XeroWrapper
 			$invoicesToUpdate = new Invoices;
 			$invoicesToUpdate->setInvoices($invoicesToUpdateArray);
 			$updateResult = $this->apiInstance->updateOrCreateInvoices($this->xeroTenantId, $invoicesToUpdate);
+			sleep(1);
 
 			if ($updateResult instanceof Invoices)
 			{
