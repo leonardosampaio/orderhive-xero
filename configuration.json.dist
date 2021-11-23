@@ -1,0 +1,22 @@
+{
+    "retries":10,
+    "timeBetweenRetries":5,
+    "credentials":
+    {
+        "xero":
+        {
+            "client_id":"",
+            "client_secret":"",
+            "redirect_uri":"",
+            "webhook_key":"",
+            "tenant_id":""
+        },
+        "orderhive":
+        {
+            "id_token": "",
+            "refresh_token": ""
+        }
+    },
+    "phpTimezone":"UTC",
+    "cacheInMinutes":10
+}
