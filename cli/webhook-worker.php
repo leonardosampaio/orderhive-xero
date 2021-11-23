@@ -88,34 +88,49 @@ $xeroWrapper = new XeroWrapper(
 foreach ($jsonPayloadFiles as $jsonPayloadFile)
 {
     $jsonPayload = json_decode(file_get_contents($jsonPayloadFile));
+    $validEvents = 0;
+    $processedEvents = 0;
+
     foreach($jsonPayload->events as $event)
     {
+
         if ($event->tenantId === $configuration->credentials->xero->tenant_id &&
             $event->eventCategory == 'INVOICE' &&
             in_array($event->eventType, ['UPDATE','CREATE']))
         {
+            $validEvents++;
+
             $invoiceId = $event->resourceId;
             Logger::getInstance()->log("Trying to update invoice $invoiceId");
             if ($xeroWrapper->updateBundleLineItems(
                 $configuration->cacheInMinutes, $orderhiveProducts, $invoiceId))
             {
-                Logger::getInstance()->log("$jsonPayloadFile processed, deleting");
-                if (!unlink($jsonPayloadFile))
-                {
-                    Logger::getInstance()->log("Error deleting $jsonPayloadFile");
-                }
+                $processedEvents++;
             }
-            else {
-                Logger::getInstance()->log("$jsonPayloadFile unprocessed, keeping for audit purposes");
-                if (!rename($jsonPayloadFile, $jsonPayloadFile . '.unprocessed'))
-                {
-                    Logger::getInstance()->log("Error renaming $jsonPayloadFile");
-                }
+        }
+    }
+
+    if ($validEvents == 0)
+    {
+        Logger::getInstance()->log("$jsonPayloadFile has an invalid request payload, deleting");
+        if (!unlink($jsonPayloadFile))
+        {
+            Logger::getInstance()->log("Error deleting $jsonPayloadFile");
+        }
+    }
+    else
+    {
+        if ($processedEvents == 0)
+        {
+            Logger::getInstance()->log("$jsonPayloadFile unprocessed, keeping for audit purposes");
+            if (!rename($jsonPayloadFile, $jsonPayloadFile . '.unprocessed'))
+            {
+                Logger::getInstance()->log("Error renaming $jsonPayloadFile");
             }
         }
         else
         {
-            Logger::getInstance()->log("$jsonPayloadFile has an invalid request payload, deleting");
+            Logger::getInstance()->log("$jsonPayloadFile processed, deleting");
             if (!unlink($jsonPayloadFile))
             {
                 Logger::getInstance()->log("Error deleting $jsonPayloadFile");
