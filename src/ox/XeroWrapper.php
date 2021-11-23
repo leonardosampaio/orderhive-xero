@@ -27,32 +27,44 @@ class XeroWrapper
 
 		$json = json_decode(file_get_contents($jsonTokenFile));
 
-		$this->xeroTenantId = $json->tenant_id;
+		// $this->xeroTenantId = $json->tenant_id;
+		$this->xeroTenantId = '';
 
-		if(time() > $json->expires)
+		// if(time() > $json->expires)
+		if(time() > $json->expires_in)
 		{
-			$provider = new GenericProvider([
+			// $provider = new GenericProvider([
+			// 	'clientId'                => $clientId,   
+			// 	'clientSecret'            => $clientSecret,
+			// 	'redirectUri'             => $redirectUri,
+			// 	'urlAuthorize'            => 'https://login.xero.com/identity/connect/authorize',
+			// 	'urlAccessToken'          => 'https://identity.xero.com/connect/token',
+			// 	'urlResourceOwnerDetails' => 'https://api.xero.com/api.xro/2.0/Organisation'
+			// ]);
+
+			// $newAccessToken = $provider->getAccessToken('refresh_token', [
+			// 	'refresh_token' => $json->refresh_token
+			// ]);
+			
+			$provider = new \League\OAuth2\Client\Provider\GenericProvider([
 				'clientId'                => $clientId,   
 				'clientSecret'            => $clientSecret,
 				'redirectUri'             => $redirectUri,
 				'urlAuthorize'            => 'https://login.xero.com/identity/connect/authorize',
 				'urlAccessToken'          => 'https://identity.xero.com/connect/token',
-				'urlResourceOwnerDetails' => 'https://api.xero.com/api.xro/2.0/Organisation'
-			]);
-	
-			$newAccessToken = $provider->getAccessToken('refresh_token', [
-				'refresh_token' => $json->refresh_token
-			]);
+				'urlResourceOwnerDetails' => 'https://identity.xero.com/resources'
+				]);
 
-			$json->token = $newAccessToken->getToken();
-			$json->expires = $newAccessToken->getExpires();
-			$json->refresh_token = $newAccessToken->getRefreshToken();
-			$json->id_token = $newAccessToken->getValues()["id_token"];
+			$newAccessToken = $provider->getAccessToken('client_credentials');
+
+			$json->access_token = $newAccessToken->getToken();
+			$json->expires_in = $newAccessToken->getExpires();
 
 			file_put_contents($jsonTokenFile, json_encode($json));
 		} 
 
-		$config = Configuration::getDefaultConfiguration()->setAccessToken($json->token);		  
+		// $config = Configuration::getDefaultConfiguration()->setAccessToken($json->token);		  
+		$config = Configuration::getDefaultConfiguration()->setAccessToken($json->access_token);
 		$this->apiInstance = new AccountingApi(new Client(), $config);
    	}
 
