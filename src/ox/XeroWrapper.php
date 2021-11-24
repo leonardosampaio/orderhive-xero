@@ -6,6 +6,7 @@ use XeroAPI\XeroPHP\Configuration;
 use XeroAPI\XeroPHP\Api\AccountingApi;
 use GuzzleHttp\Client;
 use League\OAuth2\Client\Provider\GenericProvider;
+use XeroAPI\XeroPHP\ApiException;
 use XeroAPI\XeroPHP\Models\Accounting\LineItem;
 use XeroAPI\XeroPHP\Models\Accounting\Invoices;
 use \XeroAPI\XeroPHP\Models\Accounting\Item;
@@ -14,42 +15,39 @@ use \XeroAPI\XeroPHP\Models\Accounting\Items;
 class XeroWrapper
 {
 	private $apiInstance;
+
 	private $xeroTenantId;
+	private $jsonTokenFile;
+	private $clientId;
+	private $clientSecret;
+	private $redirectUri;
+	private $token;
 
-	public function __construct($clientId, $clientSecret, $redirectUri) {
+	public function __construct($clientId, $clientSecret, $redirectUri)
+	{
+		$this->xeroTenantId = '';
+		$this->clientId = $clientId;
+		$this->clientSecret = $clientSecret;
+		$this->redirectUri = $redirectUri;
 
-		$jsonTokenFile = __DIR__.'/../../token.json';
+		$this->jsonTokenFile = __DIR__.'/../../token.json';
 
-		if (!file_exists($jsonTokenFile))
+		if (!file_exists($this->jsonTokenFile))
 		{
-			die("$jsonTokenFile not found");
+			die("$this->jsonTokenFile not found");
 		}
 
-		$json = json_decode(file_get_contents($jsonTokenFile));
+		$this->token = json_decode(file_get_contents($this->jsonTokenFile));
+   	}
 
-		// $this->xeroTenantId = $json->tenant_id;
-		$this->xeroTenantId = '';
-
-		// if(time() > $json->expires)
-		if(time() > $json->expires_in)
+	public function getApiInstance()
+	{
+		if(time() > $this->token->expires_in)
 		{
-			// $provider = new GenericProvider([
-			// 	'clientId'                => $clientId,   
-			// 	'clientSecret'            => $clientSecret,
-			// 	'redirectUri'             => $redirectUri,
-			// 	'urlAuthorize'            => 'https://login.xero.com/identity/connect/authorize',
-			// 	'urlAccessToken'          => 'https://identity.xero.com/connect/token',
-			// 	'urlResourceOwnerDetails' => 'https://api.xero.com/api.xro/2.0/Organisation'
-			// ]);
-
-			// $newAccessToken = $provider->getAccessToken('refresh_token', [
-			// 	'refresh_token' => $json->refresh_token
-			// ]);
-			
-			$provider = new \League\OAuth2\Client\Provider\GenericProvider([
-				'clientId'                => $clientId,   
-				'clientSecret'            => $clientSecret,
-				'redirectUri'             => $redirectUri,
+			$provider = new GenericProvider([
+				'clientId'                => $this->clientId,   
+				'clientSecret'            => $this->clientSecret,
+				'redirectUri'             => $this->redirectUri,
 				'urlAuthorize'            => 'https://login.xero.com/identity/connect/authorize',
 				'urlAccessToken'          => 'https://identity.xero.com/connect/token',
 				'urlResourceOwnerDetails' => 'https://identity.xero.com/resources'
@@ -57,16 +55,22 @@ class XeroWrapper
 
 			$newAccessToken = $provider->getAccessToken('client_credentials');
 
-			$json->access_token = $newAccessToken->getToken();
-			$json->expires_in = $newAccessToken->getExpires();
+			$this->token->access_token = $newAccessToken->getToken();
+			$this->token->expires_in = $newAccessToken->getExpires();
 
-			file_put_contents($jsonTokenFile, json_encode($json));
+			file_put_contents($this->jsonTokenFile, json_encode($this->token));
+
+			$this->apiInstance = null;
 		} 
 
-		// $config = Configuration::getDefaultConfiguration()->setAccessToken($json->token);		  
-		$config = Configuration::getDefaultConfiguration()->setAccessToken($json->access_token);
-		$this->apiInstance = new AccountingApi(new Client(), $config);
-   	}
+		if (!$this->apiInstance)
+		{
+			$config = Configuration::getDefaultConfiguration()->setAccessToken($this->token->access_token);
+			$this->apiInstance = new AccountingApi(new Client(), $config);
+		}
+
+		return $this->apiInstance;
+	}
 
 	/**
 	 * List all items by code (SKU)
@@ -84,7 +88,7 @@ class XeroWrapper
         {
 			$liveRequest = true;
 
-			$getItemsResult = $this->apiInstance->getItems($this->xeroTenantId);
+			$getItemsResult = $this->getApiInstance()->getItems($this->xeroTenantId);
 
 			if ($getItemsResult instanceof Items)
 			{
@@ -127,19 +131,27 @@ class XeroWrapper
 		$itemsToCreate = new Items();
 		$itemsToCreate->setItems([$item]);
 
-		$result = $this->apiInstance->updateOrCreateItems($this->xeroTenantId, $itemsToCreate);
-
-		if ($result instanceof Items)
+		try
 		{
-			return true;
+			$result = $this->getApiInstance()->updateOrCreateItems($this->xeroTenantId, $itemsToCreate, true);
+
+			if ($result instanceof Items)
+			{
+				return true;
+			}
+			else
+			{
+				Logger::getInstance()->log("Error creating item $code $name");
+				Logger::getInstance()->log(json_encode($result));
+				return false;
+			}
 		}
-		else
+		catch (ApiException $e)
 		{
 			Logger::getInstance()->log("Error creating item $code $name");
-			Logger::getInstance()->log(json_encode($result));
+			Logger::getInstance()->log($e->getMessage());
 			return false;
 		}
-		
 	}
 
 	/**
@@ -156,7 +168,7 @@ class XeroWrapper
 		$allInvoices = [];
 		if ($invoiceId)
 		{
-			$getInvoiceResult = $this->apiInstance->getInvoice($this->xeroTenantId, $invoiceId);
+			$getInvoiceResult = $this->getApiInstance()->getInvoice($this->xeroTenantId, $invoiceId);
 			sleep(1);
 
 			if ($getInvoiceResult instanceof Invoices)
@@ -176,7 +188,7 @@ class XeroWrapper
 			$page = 1;
 			do
 			{
-				$getInvoicesResult = $this->apiInstance->getInvoices($this->xeroTenantId, null, $where, null, null, null, null, null, $page);
+				$getInvoicesResult = $this->getApiInstance()->getInvoices($this->xeroTenantId, null, $where, null, null, null, null, null, $page);
 				sleep(1);
 	
 				$retrivedInvoices = [];
@@ -188,7 +200,7 @@ class XeroWrapper
 					foreach($retrivedInvoices as $invoice)
 					{
 						//to get line items, first get the full object
-						$getFullInvoiceResult = $this->apiInstance->getInvoice($this->xeroTenantId, $invoice->getInvoiceId());
+						$getFullInvoiceResult = $this->getApiInstance()->getInvoice($this->xeroTenantId, $invoice->getInvoiceId());
 						sleep(1);
 
 						if ($getFullInvoiceResult instanceof Invoices)
@@ -240,9 +252,10 @@ class XeroWrapper
 					$bundleItems = $orderhiveProducts[$currentLineItem->getItemCode()]['bundle_of'];
 					foreach($bundleItems as $bundleItem)
 					{
-						$bundleItem['description'] = $orderhiveProducts[$bundleItem['sku']]['name'];
+						$name = trim($orderhiveProducts[$bundleItem['sku']]['name']);
+						$bundleItem['description'] = strlen($name) > 50 ? substr($name, 0, 50) : $name;
 						
-						if (!isset($items[$bundleItem['sku']]))
+						if (!isset($items->{$bundleItem['sku']}))
 						{
 							$this->createItem($bundleItem['sku'], $bundleItem['description']);
 						}
@@ -278,18 +291,27 @@ class XeroWrapper
 
 			$invoicesToUpdate = new Invoices;
 			$invoicesToUpdate->setInvoices($invoicesToUpdateArray);
-			$updateResult = $this->apiInstance->updateOrCreateInvoices($this->xeroTenantId, $invoicesToUpdate);
-			sleep(1);
-
-			if ($updateResult instanceof Invoices)
+			try
 			{
-				Logger::getInstance()->log("Sucessfully updated ".sizeof($updateResult->getInvoices())." invoice(s)");
-				return true;
+				$updateResult = $this->getApiInstance()->updateOrCreateInvoices($this->xeroTenantId, $invoicesToUpdate, true);
+				sleep(1);
+	
+				if ($updateResult instanceof Invoices)
+				{
+					Logger::getInstance()->log("Sucessfully updated ".sizeof($updateResult->getInvoices())." invoice(s)");
+					return true;
+				}
+				else
+				{
+					Logger::getInstance()->log("Error updating invoice(s)");
+					Logger::getInstance()->log(json_encode($updateResult));
+					return false;
+				}
 			}
-			else
+			catch (ApiException $e)
 			{
 				Logger::getInstance()->log("Error updating invoice(s)");
-				Logger::getInstance()->log(json_encode($updateResult));
+				Logger::getInstance()->log($e->getMessage());
 				return false;
 			}
 		}
