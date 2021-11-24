@@ -228,6 +228,9 @@ class XeroWrapper
 
 			foreach($lineItems as $k => $currentLineItem)
 			{
+				Logger::getInstance()->log("Processing line item code " .
+                                        $currentLineItem->getItemCode());
+
 				if (isset($orderhiveProducts[$currentLineItem->getItemCode()]) &&
 					isset($orderhiveProducts[$currentLineItem->getItemCode()]['bundle_of']))
 				{
@@ -237,6 +240,8 @@ class XeroWrapper
 					$bundleItems = $orderhiveProducts[$currentLineItem->getItemCode()]['bundle_of'];
 					foreach($bundleItems as $bundleItem)
 					{
+						$bundleItem['description'] = $orderhiveProducts[$bundleItem['sku']]['name'];
+						
 						if (!isset($items[$bundleItem['sku']]))
 						{
 							$this->createItem($bundleItem['sku'], $bundleItem['description']);
