@@ -149,7 +149,7 @@ class XeroWrapper
 		catch (ApiException $e)
 		{
 			Logger::getInstance()->log("Error creating item $code $name");
-			Logger::getInstance()->log($e->getMessage());
+			Logger::getInstance()->log($e->getResponseBody());
 			return false;
 		}
 	}
@@ -311,7 +311,7 @@ class XeroWrapper
 			catch (ApiException $e)
 			{
 				Logger::getInstance()->log("Error updating invoice(s)");
-				Logger::getInstance()->log($e->getMessage());
+				Logger::getInstance()->log($e->getResponseBody());
 				return false;
 			}
 		}
