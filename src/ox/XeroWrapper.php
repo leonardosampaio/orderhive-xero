@@ -2,6 +2,8 @@
 
 namespace ox;
 
+use XeroAPI\XeroPHP\Models\Accounting\Payment;
+use XeroAPI\XeroPHP\Models\Accounting\Payments;
 use XeroAPI\XeroPHP\Configuration;
 use XeroAPI\XeroPHP\Api\AccountingApi;
 use GuzzleHttp\Client;
@@ -231,6 +233,7 @@ class XeroWrapper
 
 		$items 					= $this->getAllItems($cacheInMinutes);
 		$invoicesToUpdateArray 	= [];
+		$paymentsToRecreate 	= [];
 		foreach($allInvoices as $invoice)
 		{
 			Logger::getInstance()->log("Processing invoice " . $invoice->getInvoiceId());
@@ -246,6 +249,42 @@ class XeroWrapper
 				if (isset($orderhiveProducts[$currentLineItem->getItemCode()]) &&
 					isset($orderhiveProducts[$currentLineItem->getItemCode()]['bundle_of']))
 				{
+					$deletedPayments = [];
+					$invoicePayments = $invoice->getPayments();
+					if (!empty($invoicePayments))
+					{
+						foreach($invoicePayments as $payment)
+						{
+							$paymentId = $payment->getPaymentId();
+							$payment = new Payment;
+							$payment->setPaymentID($paymentId)
+									->setStatus(PAYMENT::STATUS_DELETED);
+
+							$result = $this->apiInstance->deletePayment($this->xeroTenantId, $paymentId, $payment);
+							if ($result instanceof Payments)
+							{
+								Logger::getInstance()->log("Deleted payment $paymentId");
+								array_push($deletedPayments, $result->getPayments()[0]);
+							}
+							else
+							{
+								Logger::getInstance()->log("Error deleting payment $paymentId");
+							}
+						}
+
+						if (!empty($deletedPayments))
+						{
+							//payments deleted, reload object
+							$invoice = $this->apiInstance->getInvoice($this->xeroTenantId, $invoice->getInvoiceId())[0];
+							sleep(1);
+
+							if (sizeof($deletedPayments) === 1)
+							{
+								$paymentsToRecreate[$invoice->getInvoiceId()] = $deletedPayments[0];
+							}
+						}
+					}
+
 					Logger::getInstance()->log("Replacing bundle ".$currentLineItem->getItemCode()." by individual items");
 					unset($lineItems[$k]);
 
@@ -268,7 +307,10 @@ class XeroWrapper
 							->setUnitAmount(round(
 								($currentLineItem->getUnitAmount() / sizeof($bundleItems))/$bundleItem['componentQuantity'], 2))
 							->setItemCode($bundleItem['sku'])
-							->setAccountCode($currentLineItem->getAccountCode());
+							->setAccountCode($currentLineItem->getAccountCode())
+							->setTaxType($currentLineItem->getTaxType())
+							->setDiscountRate($currentLineItem->getDiscountRate())
+							->setTracking($currentLineItem->getTracking());
 						$newLineItems[] = $newLineItem;
 					}
 				}
@@ -295,10 +337,57 @@ class XeroWrapper
 			{
 				$updateResult = $this->getApiInstance()->updateOrCreateInvoices($this->xeroTenantId, $invoicesToUpdate, true);
 				sleep(1);
-	
 				if ($updateResult instanceof Invoices)
 				{
 					Logger::getInstance()->log("Sucessfully updated ".sizeof($updateResult->getInvoices())." invoice(s)");
+
+					if (!empty($paymentsToRecreate))
+					{
+						Logger::getInstance()->log("Recreating ".sizeof($paymentsToRecreate)." payments(s)");
+
+						$updatedInvoicesTotals = [];
+						foreach($updateResult as $invoice)
+						{
+							$updatedInvoicesTotals[$invoice->getInvoiceId()] = $invoice->getTotal();
+						}
+
+						$newPaymentsObj = new Payments;
+						$newPaymentsArr = [];
+
+						foreach ($paymentsToRecreate as $invoiceId => $paymentToRecreate)
+						{
+							$newTotal = $updatedInvoicesTotals[$invoiceId];
+							
+							$newPayment = new Payment;
+							$newPayment->setInvoice($paymentToRecreate->getInvoice())
+								->setAccount($paymentToRecreate->getAccount())
+								->setAmount($newTotal)
+								->setReference($paymentToRecreate->getReference())
+								->setDate($paymentToRecreate->getDate());
+							$newPaymentsArr[] = $newPayment;
+						}
+
+						$newPaymentsObj->setPayments($newPaymentsArr);
+
+						try {
+							$result = $this->apiInstance->createPayment($this->xeroTenantId, $newPaymentsObj);
+							if ($result instanceof Payments)
+							{
+								Logger::getInstance()->log(
+									"Sucessfully recreated ".sizeof($result->getPayments())." payment(s)");
+							}
+							else
+							{
+								Logger::getInstance()->log("Error recreating payment(s)");
+							}
+						}
+						catch (ApiException $e)
+						{
+							Logger::getInstance()->log("Error recreating payment(s)");
+							Logger::getInstance()->log($e->getResponseBody());
+						}
+					}
+
 					return true;
 				}
 				else
