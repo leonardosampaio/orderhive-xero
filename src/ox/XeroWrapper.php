@@ -91,6 +91,7 @@ class XeroWrapper
 			$liveRequest = true;
 
 			$getItemsResult = $this->getApiInstance()->getItems($this->xeroTenantId);
+			sleep(1);
 
 			if ($getItemsResult instanceof Items)
 			{
@@ -136,6 +137,7 @@ class XeroWrapper
 		try
 		{
 			$result = $this->getApiInstance()->updateOrCreateItems($this->xeroTenantId, $itemsToCreate, true);
+			sleep(1);
 
 			if ($result instanceof Items)
 			{
@@ -261,6 +263,8 @@ class XeroWrapper
 									->setStatus(PAYMENT::STATUS_DELETED);
 
 							$result = $this->apiInstance->deletePayment($this->xeroTenantId, $paymentId, $payment);
+							sleep(1);
+
 							if ($result instanceof Payments)
 							{
 								Logger::getInstance()->log("Deleted payment $paymentId");
@@ -337,6 +341,7 @@ class XeroWrapper
 			{
 				$updateResult = $this->getApiInstance()->updateOrCreateInvoices($this->xeroTenantId, $invoicesToUpdate, true);
 				sleep(1);
+				
 				if ($updateResult instanceof Invoices)
 				{
 					Logger::getInstance()->log("Sucessfully updated ".sizeof($updateResult->getInvoices())." invoice(s)");
@@ -371,6 +376,8 @@ class XeroWrapper
 
 						try {
 							$result = $this->apiInstance->createPayment($this->xeroTenantId, $newPaymentsObj);
+							sleep(1);
+
 							if ($result instanceof Payments)
 							{
 								Logger::getInstance()->log(
