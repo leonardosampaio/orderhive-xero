@@ -262,8 +262,16 @@ class XeroWrapper
 							$payment->setPaymentID($paymentId)
 									->setStatus(PAYMENT::STATUS_DELETED);
 
-							$result = $this->apiInstance->deletePayment($this->xeroTenantId, $paymentId, $payment);
-							sleep(1);
+							try {
+								$result = $this->apiInstance->deletePayment($this->xeroTenantId, $paymentId, $payment);
+								sleep(1);
+							}
+							catch (ApiException $e)
+							{
+								Logger::getInstance()->log("Error deleting payment $paymentId");
+								Logger::getInstance()->log($e->getResponseBody());
+								return false;
+							}
 
 							if ($result instanceof Payments)
 							{

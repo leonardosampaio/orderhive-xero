@@ -11,8 +11,7 @@ use ox\Logger;
 use ox\XeroWrapper;
 use ox\OrderhiveWrapper;
 
-$logFile = __DIR__.'/../logs/test-'.date('Y-m-d_His').'.log';
-Logger::getInstance()->setOutputFile($logFile);
+Logger::getInstance()->setModes(['stdout']);
 
 $configuration = json_decode(file_get_contents(__DIR__.'/../configuration.json'));
 
@@ -33,4 +32,4 @@ $redirectUri = $configuration->credentials->xero->redirect_uri;
 
 $x = new XeroWrapper($clientId, $clientSecret, $redirectUri);
 
-var_dump($x->updateBundleLineItems(0, $orderhiveProducts, '81d3798c-90ff-456c-af0a-1bb562288b71'));
+var_dump($x->updateBundleLineItems(0, $orderhiveProducts, '02081b4f-8f0e-4f58-b68f-e9b731e01bab'));
