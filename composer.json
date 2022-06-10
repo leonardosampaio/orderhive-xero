@@ -1,8 +1,8 @@
 {
   "repositories": [
     {
-        "type": "path",
-        "url": "OrderHive-PHP-SDK"
+      "type": "vcs",
+      "url": "https://github.com/leonardosampaio/OrderHive-PHP-SDK"
     }
   ],
   "name": "xeroapi/xero-php-oauth2-app",

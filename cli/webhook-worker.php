@@ -67,10 +67,11 @@ if (isset($configuration->phpTimezone) && !empty($configuration->phpTimezone))
 }
 Logger::getInstance()->log("Current PHP timezone: '" . date_default_timezone_get() . "'");
 
-$orderhiveAPIConfig = [
-    'id_token' => $configuration->credentials->orderhive->id_token,
-    'refresh_token' => $configuration->credentials->orderhive->refresh_token
-];
+$orderhiveAPIConfig = [];
+foreach($configuration->credentials->orderhive as $key => $value)
+{
+    $orderhiveAPIConfig[$key] = $value;
+}
 $app = new \OrderHive\OrderHive($orderhiveAPIConfig);
 $orderhiveWrapper = new OrderhiveWrapper(
     $app,

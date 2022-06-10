@@ -15,10 +15,11 @@ Logger::getInstance()->setModes(['stdout']);
 
 $configuration = json_decode(file_get_contents(__DIR__.'/../configuration.json'));
 
-$orderhiveAPIConfig = [
-    'id_token' => $configuration->credentials->orderhive->id_token,
-    'refresh_token' => $configuration->credentials->orderhive->refresh_token
-];
+$orderhiveAPIConfig = [];
+foreach($configuration->credentials->orderhive as $key => $value)
+{
+    $orderhiveAPIConfig[$key] = $value;
+}
 $app = new \OrderHive\OrderHive($orderhiveAPIConfig);
 $orderhiveWrapper = new OrderhiveWrapper(
     $app,
